@@ -61,6 +61,8 @@ parser.add_argument("--recurrence", type=int, default=1,
                     help="number of time-steps gradient is backpropagated (default: 1). If > 1, a LSTM is added to the model to have memory.")
 parser.add_argument("--text", action="store_true", default=False,
                     help="add a GRU to the model to handle text input")
+parser.add_argument("--use_number", action="store_true", default=False,
+                    help="handle numerical input")
 
 args = parser.parse_args()
 
@@ -110,15 +112,15 @@ except OSError:
 txt_logger.info("Training status loaded\n")
 
 # Load observations preprocessor
+obs_space, preprocess_obss = utils.get_obss_preprocessor(envs[0].observation_space, args.use_number)
 
-obs_space, preprocess_obss = utils.get_obss_preprocessor(envs[0].observation_space)
 if "vocab" in status:
     preprocess_obss.vocab.load_vocab(status["vocab"])
 txt_logger.info("Observations preprocessor loaded")
 
 # Load model
 
-acmodel = ACModel(obs_space, envs[0].action_space, args.mem, args.text)
+acmodel = ACModel(obs_space, envs[0].action_space, args.mem, args.text, args.use_number)
 if "model_state" in status:
     acmodel.load_state_dict(status["model_state"])
 acmodel.to(device)

@@ -9,7 +9,7 @@ import gym
 import utils
 
 
-def get_obss_preprocessor(obs_space):
+def get_obss_preprocessor(obs_space, use_number=False):
     # Check if obs_space is an image space
     if isinstance(obs_space, gym.spaces.Box):
         obs_space = {"image": obs_space.shape}
@@ -25,17 +25,26 @@ def get_obss_preprocessor(obs_space):
 
         vocab = Vocabulary(obs_space["text"])
         def preprocess_obss(obss, device=None):
-            return torch_ac.DictList({
+            preprocessed_obs = torch_ac.DictList({
                 "image": preprocess_images([obs["image"] for obs in obss], device=device),
                 "text": preprocess_texts([obs["mission"] for obs in obss], vocab, device=device)
             })
-        preprocess_obss.vocab = vocab
+            preprocess_obss.vocab = vocab
+
+            if use_number:
+                preprocessed_obs["numbers"] = preprocess_numbers([obs["numbers"] for obs in obss], device=device)
+            return preprocessed_obs
 
     else:
         raise ValueError("Unknown observation space: " + str(obs_space))
 
     return obs_space, preprocess_obss
 
+
+def preprocess_numbers(numbers, device=None):
+    # Bug of Pytorch: very slow if not first converted to numpy array
+    numbers = numpy.array(numbers)
+    return torch.tensor(numbers, device=device, dtype=torch.float)
 
 def preprocess_images(images, device=None):
     # Bug of Pytorch: very slow if not first converted to numpy array
@@ -48,7 +57,7 @@ def preprocess_texts(texts, vocab, device=None):
     max_text_len = 0
 
     for text in texts:
-        tokens = re.findall("([a-z]+)", text.lower())
+        tokens = re.findall("([a-z]+|[1-9][0-9][0-9]|[1-9][0-9]|[1-9])", text.lower())
         var_indexed_text = numpy.array([vocab[token] for token in tokens])
         var_indexed_texts.append(var_indexed_text)
         max_text_len = max(len(var_indexed_text), max_text_len)

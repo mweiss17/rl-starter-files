@@ -52,7 +52,8 @@ print("Environment loaded\n")
 
 model_dir = utils.get_model_dir(args.model)
 agent = utils.Agent(env.observation_space, env.action_space, model_dir,
-                    device=device, argmax=args.argmax, use_memory=args.memory, use_text=args.text)
+                    device=device, argmax=args.argmax, use_memory=args.memory, use_text=args.text,
+                    use_number=args.use_number)
 print("Agent loaded\n")
 
 # Run the agent

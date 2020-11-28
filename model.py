@@ -16,11 +16,12 @@ def init_params(m):
 
 
 class ACModel(nn.Module, torch_ac.RecurrentACModel):
-    def __init__(self, obs_space, action_space, use_memory=False, use_text=False):
+    def __init__(self, obs_space, action_space, use_memory=False, use_text=False, use_number=False):
         super().__init__()
 
         # Decide which components are enabled
         self.use_text = use_text
+        self.use_number = use_number
         self.use_memory = use_memory
 
         # Define image embedding
@@ -36,6 +37,7 @@ class ACModel(nn.Module, torch_ac.RecurrentACModel):
         n = obs_space["image"][0]
         m = obs_space["image"][1]
         self.image_embedding_size = ((n-1)//2-2)*((m-1)//2-2)*64
+        self.hidden_layer_size = 64
 
         # Define memory
         if self.use_memory:
@@ -53,18 +55,21 @@ class ACModel(nn.Module, torch_ac.RecurrentACModel):
         if self.use_text:
             self.embedding_size += self.text_embedding_size
 
+        if self.use_number:
+            self.embedding_size += 1
+
         # Define actor's model
         self.actor = nn.Sequential(
-            nn.Linear(self.embedding_size, 64),
+            nn.Linear(self.embedding_size, self.hidden_layer_size),
             nn.Tanh(),
-            nn.Linear(64, action_space.n)
+            nn.Linear(self.hidden_layer_size, action_space.n)
         )
 
         # Define critic's model
         self.critic = nn.Sequential(
-            nn.Linear(self.embedding_size, 64),
+            nn.Linear(self.embedding_size, self.hidden_layer_size),
             nn.Tanh(),
-            nn.Linear(64, 1)
+            nn.Linear(self.hidden_layer_size, 1)
         )
 
         # Initialize parameters correctly
@@ -94,6 +99,9 @@ class ACModel(nn.Module, torch_ac.RecurrentACModel):
         if self.use_text:
             embed_text = self._get_embed_text(obs.text)
             embedding = torch.cat((embedding, embed_text), dim=1)
+
+        if self.use_number:
+            embedding = torch.cat((embedding, obs.numbers), dim=1)
 
         x = self.actor(embedding)
         dist = Categorical(logits=F.log_softmax(x, dim=1))
