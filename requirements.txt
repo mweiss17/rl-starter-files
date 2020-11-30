@@ -3,3 +3,6 @@ torch-ac>=1.1.0
 gym-minigrid
 tensorboardX>=1.6
 numpy>=1.3
+hydra-core==0.11
+yaml>=5.3.1
+omegaconf>=1.4.1
