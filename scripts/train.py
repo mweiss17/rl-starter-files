@@ -73,7 +73,7 @@ args.mem = args.recurrence > 1
 date = datetime.datetime.now().strftime("%y-%m-%d-%H-%M-%S")
 default_model_name = f"{args.env}_{args.algo}_seed{args.seed}_{date}"
 
-model_name = args.model or default_model_name
+model_name = args.model + f"/seed_{args.seed}" or default_model_name
 model_dir = utils.get_model_dir(model_name)
 
 # Load loggers and Tensorboard writer

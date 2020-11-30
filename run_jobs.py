@@ -69,7 +69,7 @@ def fill_mila_template(template_str, conf):
     )
     env_name = conf.get("env_name", "navi-generalization")
     weights = conf.get("weights")
-    code_loc = conf.get("code_loc", str(Path(home) / "simulator/src/covid19sim/"))
+    code_loc = conf.get("code_loc", str(Path(home) / "navi-generalization/rl-starter-files/"))
 
     use_transformer = conf.get("use_transformer", True)
     workers = cpu - 1
@@ -440,15 +440,16 @@ def main(conf: DictConfig) -> None:
             # convert params to string command-line args
             exclude = RANDOM_SEARCH_SPECIFIC_PARAMS
             hydra_args = get_hydra_args(opts, exclude)
-
-            # echo commandlines run in job
-            if not dev:
-                job_str += f"\necho 'python -m scripts.train {hydra_args}'\n"
+            #
+            # # echo commandlines run in job
+            # if not dev:
+            #     job_str += f"\necho 'python -m scripts.train {hydra_args}'\n"
 
             command_suffix = "&\nsleep 5;\n" if parallel_search else ";\n"
 
             # append run command
-            job_str += f"\n python -m scripts.train --algo ppo --env {conf['env']} --model {conf['model']} --seed {opts['seed']} --save-interval 10 --frames {'--text' if conf['text'] else ''}"# + hydra_args
+            job_str += f"\n cd {conf['code_loc']}"
+            job_str += f"\n python scripts/train.py --algo ppo --env {conf['env']} --model {conf['model']} --seed {opts['seed']} --procs {conf['procs']} --save-interval 10 --frames {conf['frames']} {'--text' if conf['text'] else ''} {'--use_number' if conf['number'] else ''}"# + hydra_args
             job_str += command_suffix
 
         if skipped:
@@ -473,7 +474,7 @@ def main(conf: DictConfig) -> None:
         else:
             # not dev-mode: run it!
             _ = subprocess.call(command.split(), cwd=home)
-            print("In", opts["outdir"])
+            # print("In", opts["outdir"])
             print("With Sampled Params:")
             print(sampled_str.format(**{k: opts.get(k) for k in sampled_keys}))
 

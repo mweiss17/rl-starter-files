@@ -1,0 +1,12 @@
+env: "MiniGrid-GoToDoorAddress-v0"
+model: "GoToDoorAddressTextNumericPostNonlinearity"
+text: False
+number: True
+
+seed:
+  sample: cartesian
+  from:
+    - 0
+    - 1
+    - 2
+

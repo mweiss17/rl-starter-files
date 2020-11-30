@@ -1,4 +1,4 @@
-#!/bin/bash
+#! /bin/bash
 # /!\ THIS FILE WILL BE PYTHON-FORMATTED: DO NOT USE CURLY-BRACKETS IN TEXT
 {partition}        # Partition to use
 {cpu}              # Nb. of cpus (max(unkillable)=4, max(main)=6)
@@ -11,14 +11,18 @@
 #SBATCH --mail-type=END
 #SBATCH --mail-type=FAIL
 
-
-# 1. Load the required modules
-module --quiet load anaconda/3
-
-# 2. Load your environment
+module purge
+module load anaconda/3
+source $CONDA_ACTIVATE
+conda deactivate
 conda activate navi-generalization
 
 export PYTHONUNBUFFERED=1
+
+cd {code_loc}
+
+echo $(pwd)
+echo $(which python)
 
 echo "------------------------"
 

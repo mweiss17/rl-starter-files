@@ -1,22 +1,11 @@
-# ----------------------------
-# -----  Infrastructure  -----
-# ----------------------------
+procs: 8
 cpus: 4
 env_name: navi-generalization
-mem: 20
+mem: 4
 n_search: -1 # -1 figures out the size of cartesian product for you
-time: "'5:00:00'"
-base_dir: "$HOME/navi-generalization/rl-starter-files/"
-
-# -------------------------
-# -----  Directories  -----
-# -------------------------
-#base_dir: $HOME/simulator/results/pareto_front # if outdir is not provided, runs will be stored in base_dir/${intervention}
-#code_loc: $HOME/simulator/src/covid19sim/
+time: "'3:59:00'"
+base_dir: /home/mila/w/weissmar/navi-generalization/rl-starter-files/outputs/
+frames: 1000000
+code_loc: /home/mila/w/weissmar/navi-generalization/rl-starter-files
 #use_tmpdir: false
 #weights_dir: $SCRATCH/weights
-
-# -------------------------------------
-# -----  Simulation Fixed Params  -----
-# -------------------------------------
-

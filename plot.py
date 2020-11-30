@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 # Get all event* runs from logging_dir subdirectories
 logging_dirs = ['./storage/to_plot/GoToDoorAddressPPONumericPreNonlinearity', './storage/to_plot/GoToDoorAddressTextPPO']
 plot_dir = './storage/plots/'
-use_cache = False
+use_cache = True
 event_paths = []
 for logging_dir in logging_dirs:
     event_paths.extend(glob.glob(os.path.join(logging_dir, "event*")))
@@ -35,7 +35,7 @@ def sum_log(path):
 def print_plot(metric, all_logs):
     ys = {}
     for method_name, logs in all_logs.items():
-        data = logs[logs['metric'] == metric][metric].tolist()
+        data = logs[logs['metric'] == metric]["value"].tolist()
         plt.plot(data, label=method_name)
 
     plt.plot(ys.values())
@@ -43,7 +43,7 @@ def print_plot(metric, all_logs):
     plt.xlabel("Updates")
     plt.legend()
     plt.savefig(f"{plot_dir}/{metric}")
-
+    plt.clf()
 
 # Call & append
 all_logs = {}
@@ -58,3 +58,8 @@ if not use_cache:
 if use_cache:
     all_logs = pickle.load(open("storage/all_logs.pkl", 'rb'))
 values = print_plot("value", all_logs)
+policy_loss = print_plot("policy_loss", all_logs)
+value_loss = print_plot("value_loss", all_logs)
+return_mean = print_plot("return_mean", all_logs)
+rreturn_mean = print_plot("rreturn_mean", all_logs)
+FPS = print_plot("FPS", all_logs)
