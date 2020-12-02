@@ -316,7 +316,6 @@ def main(conf: DictConfig) -> None:
         "env_name",  # conda environment to load
         "code_loc",  # where to find the source code, will cd there
         "weights",  # where to find the transformer's weights
-        "infra",  # using Mila or Intel cluster?
         "now_str",  # naming scheme
         "parallel_search",  # run with & at the end instead of ; to run in subshells
         "start_index",  # ignore the first runs, to continue an exploration for instance
@@ -377,7 +376,6 @@ def main(conf: DictConfig) -> None:
     print(f"Running {total_runs} scripts")
 
     conf["now_str"] = now_str()
-    infra = conf.get("infra", "mila")
     parallel_search = conf.get("parallel_search", False)
     start_index = conf.get("start_index", 0)
     base = Path(__file__).resolve().parent
@@ -439,17 +437,24 @@ def main(conf: DictConfig) -> None:
 
             # convert params to string command-line args
             exclude = RANDOM_SEARCH_SPECIFIC_PARAMS
-            hydra_args = get_hydra_args(opts, exclude)
-            #
-            # # echo commandlines run in job
-            # if not dev:
-            #     job_str += f"\necho 'python -m scripts.train {hydra_args}'\n"
 
             command_suffix = "&\nsleep 5;\n" if parallel_search else ";\n"
 
             # append run command
             job_str += f"\n cd {conf['code_loc']}"
-            job_str += f"\n python scripts/train.py --algo ppo --env {conf['env']} --model {conf['model']} --seed {opts['seed']} --procs {conf['procs']} --save-interval 10 --frames {conf['frames']} {'--text' if conf['text'] else ''} {'--use_number' if conf['number'] else ''}"# + hydra_args
+            job_str += f"\n python scripts/train.py --algo ppo"
+            job_str += f"--env {conf['env']}"
+            job_str += f"--model {conf['model']}"
+            job_str += f"--seed {opts['seed']}"
+            job_str += f"--procs {conf['procs']}"
+            job_str += f"--save-interval 10"
+            job_str += f"--frames {conf['frames']}"
+            job_str += f"{'--text' if conf['text'] else ''}"
+            job_str += f"{'--use_number' if conf['number'] else ''}"
+            job_str += f"{'--use_nac' if conf['use_nac'] else ''}"
+            job_str += f""
+            job_str += f""
+
             job_str += command_suffix
 
         if skipped:

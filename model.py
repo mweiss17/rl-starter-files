@@ -14,16 +14,31 @@ def init_params(m):
         if m.bias is not None:
             m.bias.data.fill_(0)
 
+class NAC(nn.Module):
+  def __init__(self, n_in, n_out):
+    super().__init__()
+    self.W_hat = nn.Parameter(torch.Tensor(n_out, n_in))
+    self.M_hat = nn.Parameter(torch.Tensor(n_out, n_in))
+    self.reset_parameters()
+
+  def reset_parameters(self):
+    nn.init.kaiming_uniform_(self.W_hat)
+    nn.init.kaiming_uniform_(self.M_hat)
+
+  def forward(self, input):
+    weights = torch.tanh(self.W_hat) * torch.sigmoid(self.M_hat)
+    return F.linear(input, weights)
+
 
 class ACModel(nn.Module, torch_ac.RecurrentACModel):
-    def __init__(self, obs_space, action_space, use_memory=False, use_text=False, use_number=False):
+    def __init__(self, obs_space, action_space, use_memory=False, use_text=False, use_number=False, use_nac=False):
         super().__init__()
 
         # Decide which components are enabled
         self.use_text = use_text
         self.use_number = use_number
         self.use_memory = use_memory
-
+        self.use_nac = use_nac
         # Define image embedding
         self.image_conv = nn.Sequential(
             nn.Conv2d(3, 16, (2, 2)),
@@ -58,19 +73,29 @@ class ACModel(nn.Module, torch_ac.RecurrentACModel):
         if self.use_number:
             self.embedding_size += 1
 
-        # Define actor's model
-        self.actor = nn.Sequential(
-            nn.Linear(self.embedding_size, self.hidden_layer_size),
-            nn.Tanh(),
-            nn.Linear(self.hidden_layer_size, action_space.n)
-        )
 
-        # Define critic's model
-        self.critic = nn.Sequential(
-            nn.Linear(self.embedding_size, self.hidden_layer_size),
-            nn.Tanh(),
-            nn.Linear(self.hidden_layer_size, 1)
-        )
+        if self.use_nac:
+            self.critic = nn.Sequential(
+                nn.Linear(self.embedding_size, self.hidden_layer_size),
+                nn.Tanh(),
+                NAC(self.hidden_layer_size, 1)
+            )
+            self.actor = nn.Sequential(
+                nn.Linear(self.embedding_size, self.hidden_layer_size),
+                nn.Tanh(),
+                NAC(self.hidden_layer_size, 1)
+            )
+        else:
+            self.actor = nn.Sequential(
+                nn.Linear(self.embedding_size, self.hidden_layer_size),
+                nn.Tanh(),
+                nn.Linear(self.hidden_layer_size, action_space.n)
+            )
+            self.critic = nn.Sequential(
+                nn.Linear(self.embedding_size, self.hidden_layer_size),
+                nn.Tanh(),
+                nn.Linear(self.hidden_layer_size, 1)
+            )
 
         # Initialize parameters correctly
         self.apply(init_params)

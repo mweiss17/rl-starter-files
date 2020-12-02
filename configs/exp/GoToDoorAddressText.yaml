@@ -1,6 +1,8 @@
 env: "MiniGrid-GoToDoorAddressText-v0"
 model: "GoToDoorAddressText"
 text: True
+number: False
+use_nac: False
 
 seed:
   sample: cartesian

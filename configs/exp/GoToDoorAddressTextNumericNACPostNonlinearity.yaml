@@ -1,8 +1,8 @@
 env: "MiniGrid-GoToDoorAddress-v0"
-model: "GoToDoorAddressNumeric"
+model: "GoToDoorAddressNumericNACPostNonlinearity"
 text: False
 number: True
-use_nac: False
+use_nac: True
 
 seed:
   sample: cartesian

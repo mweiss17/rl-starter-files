@@ -3,8 +3,9 @@ import time
 import datetime
 import torch
 import torch_ac
-import tensorboardX
 import sys
+import pickle
+from collections import defaultdict
 
 import utils
 from model import ACModel
@@ -80,7 +81,6 @@ model_dir = utils.get_model_dir(model_name)
 
 txt_logger = utils.get_txt_logger(model_dir)
 csv_file, csv_logger = utils.get_csv_logger(model_dir)
-tb_writer = tensorboardX.SummaryWriter(model_dir)
 
 # Log command and all script arguments
 
@@ -149,6 +149,7 @@ txt_logger.info("Optimizer loaded\n")
 num_frames = status["num_frames"]
 update = status["update"]
 start_time = time.time()
+results = defaultdict(list)
 
 while num_frames < args.frames:
     # Update model parameters
@@ -191,12 +192,11 @@ while num_frames < args.frames:
             csv_logger.writerow(header)
         csv_logger.writerow(data)
         csv_file.flush()
-
         for field, value in zip(header, data):
-            tb_writer.add_scalar(field, value, num_frames)
+            results[field].append(value)
+        pickle.dump(results, open(model_dir + "/results.pkl", "wb"))
 
     # Save status
-
     if args.save_interval > 0 and update % args.save_interval == 0:
         status = {"num_frames": num_frames, "update": update,
                   "model_state": acmodel.state_dict(), "optimizer_state": algo.optimizer.state_dict()}
