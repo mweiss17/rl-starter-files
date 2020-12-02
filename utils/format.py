@@ -21,14 +21,17 @@ def get_obss_preprocessor(obs_space, use_number=False):
 
         vocab = Vocabulary(obs_space["text"])
         def preprocess_obss(obss, device=None):
+            numbers = torch.Tensor()
+            if use_number:
+                numbers = preprocess_numbers([obs["numbers"] for obs in obss], device=device)
+
             preprocessed_obs = torch_ac.DictList({
                 "image": preprocess_images([obs["image"] for obs in obss], device=device),
-                "text": preprocess_texts([obs["mission"] for obs in obss], vocab, device=device)
+                "text": preprocess_texts([obs["mission"] for obs in obss], vocab, device=device),
+                "numbers": numbers
             })
             preprocess_obss.vocab = vocab
 
-            if use_number:
-                preprocessed_obs["numbers"] = preprocess_numbers([obs["numbers"] for obs in obss], device=device)
             return preprocessed_obs
 
     else:

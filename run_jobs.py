@@ -442,18 +442,16 @@ def main(conf: DictConfig) -> None:
 
             # append run command
             job_str += f"\n cd {conf['code_loc']}"
-            job_str += f"\n python scripts/train.py --algo ppo"
-            job_str += f"--env {conf['env']}"
-            job_str += f"--model {conf['model']}"
-            job_str += f"--seed {opts['seed']}"
-            job_str += f"--procs {conf['procs']}"
-            job_str += f"--save-interval 10"
-            job_str += f"--frames {conf['frames']}"
-            job_str += f"{'--text' if conf['text'] else ''}"
-            job_str += f"{'--use_number' if conf['number'] else ''}"
-            job_str += f"{'--use_nac' if conf['use_nac'] else ''}"
-            job_str += f""
-            job_str += f""
+            job_str += f"\n python scripts/train.py --algo ppo "
+            job_str += f"--env {conf['env']} "
+            job_str += f"--model {conf['model']} "
+            job_str += f"--seed {opts['seed']} "
+            job_str += f"--procs {conf['procs']} "
+            job_str += f"--save-interval 10 "
+            job_str += f"--frames {conf['frames']} "
+            job_str += f"{'--text' if conf['text'] else '' }"
+            job_str += f"{'--use_number' if conf['number'] else '' }"
+            job_str += f"{'--use_nac' if conf['use_nac'] else '' }"
 
             job_str += command_suffix
 
