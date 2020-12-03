@@ -83,7 +83,7 @@ class ACModel(nn.Module, torch_ac.RecurrentACModel):
             self.actor = nn.Sequential(
                 nn.Linear(self.embedding_size, self.hidden_layer_size),
                 nn.Tanh(),
-                NAC(self.hidden_layer_size, 1)
+                NAC(self.hidden_layer_size, action_space.n)
             )
         else:
             self.actor = nn.Sequential(

@@ -33,10 +33,10 @@ for root, exp_dirs, files in walklevel(logging_dir):
 def print_plot(metric, all_logs):
 
     for method_name, logs in all_logs.items():
+        print(method_name)
         data = []
         for seed in range(len(logs)):
             data.append(logs[seed][metric])
-        import pdb; pdb.set_trace()
         data = np.array(data)
         plt.errorbar(range(len(data[0])), data.mean(axis=0), yerr=data.std(axis=0), label=method_name)
 

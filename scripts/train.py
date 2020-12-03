@@ -64,6 +64,8 @@ parser.add_argument("--text", action="store_true", default=False,
                     help="add a GRU to the model to handle text input")
 parser.add_argument("--use_number", action="store_true", default=False,
                     help="handle numerical input")
+parser.add_argument("--use_nac", action="store_true", default=False,
+                    help="use a neural accumulator")
 
 args = parser.parse_args()
 
@@ -120,7 +122,7 @@ txt_logger.info("Observations preprocessor loaded")
 
 # Load model
 
-acmodel = ACModel(obs_space, envs[0].action_space, args.mem, args.text, args.use_number)
+acmodel = ACModel(obs_space, envs[0].action_space, args.mem, args.text, args.use_number, args.use_nac)
 if "model_state" in status:
     acmodel.load_state_dict(status["model_state"])
 acmodel.to(device)
