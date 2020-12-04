@@ -1,7 +1,7 @@
 procs: 8
 cpus: 4
 env_name: navi-generalization
-mem: 4
+mem: 8
 n_search: -1 # -1 figures out the size of cartesian product for you
 time: "'3:59:00'"
 base_dir: /home/mila/w/weissmar/navi-generalization/rl-starter-files/outputs/
