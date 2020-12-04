@@ -114,6 +114,7 @@ eval_envs = []
 for i in range(args.procs):
     eval_env_name = args.eval_env if args.eval_env else args.env
     eval_envs.append(utils.make_env(eval_env_name, args.seed + 10000 * i))
+parallel_eval_env = ParallelEnv(eval_envs) # do this here cause we change the attribute directly on algo (instead of re-instantiating)
 txt_logger.info("Environments loaded\n")
 
 # Load training status
@@ -230,7 +231,7 @@ while num_frames < args.frames:
 
     if args.evaluate_interval > 0 and update % args.evaluate_interval == 0:
         algo.acmodel.eval()
-        algo.env = ParallelEnv(eval_envs)
+        algo.env = parallel_eval_env
 
         eval_logs = {}
         eval_logs['return_per_episode'] = []

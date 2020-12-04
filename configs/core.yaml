@@ -1,4 +1,4 @@
-procs: 8
+procs: 4
 cpus: 4
 env_name: navi-generalization
 mem: 8
