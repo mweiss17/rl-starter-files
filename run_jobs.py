@@ -452,7 +452,9 @@ def main(conf: DictConfig) -> None:
             job_str += f"{'--text' if conf['text'] else '' } "
             job_str += f"{'--use-number' if conf['number'] else '' } "
             job_str += f"{'--use-nac' if conf['use_nac'] else '' } "
-            job_str += f"{'--eval-env' if conf['eval_env'] else '' } "
+            if conf['eval_env']:
+                job_str += f"--eval-env {conf['eval_env']} "
+
 
             job_str += command_suffix
 
