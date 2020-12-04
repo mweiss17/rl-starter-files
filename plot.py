@@ -1,14 +1,15 @@
-import tensorflow as tf
 import glob
 import os
 import pickle
 import numpy as np
+import seaborn as sns
 from tqdm import tqdm
 from matplotlib import pyplot as plt
 
 # Get all event* runs from logging_dir subdirectories
 logging_dir = './storage/'
 plot_dir = './plots'
+clrs = sns.color_palette("husl", 5)
 if not os.path.isdir(plot_dir):
     os.mkdir(plot_dir)
 use_cache = False
@@ -31,20 +32,25 @@ for root, exp_dirs, files in walklevel(logging_dir):
 
 
 def print_plot(metric, all_logs):
+    fig, ax = plt.subplots()
+    with sns.axes_style("darkgrid"):
 
-    for method_name, logs in all_logs.items():
-        print(method_name)
-        data = []
-        for seed in range(len(logs)):
-            data.append(logs[seed][metric])
-        data = np.array(data)
-        plt.errorbar(range(len(data[0])), data.mean(axis=0), yerr=data.std(axis=0), label=method_name)
+        for method_name, logs in all_logs.items():
+            print(f"{method_name}, {metric}")
+            data = []
+            for seed in range(len(logs)):
+                data.append(logs[seed][metric])
+                print(f"seed: {seed}, len: {len(logs[seed][metric])}")
+            data = np.array(data)
+            # plt.errorbar(range(len(data[0])), data.mean(axis=0), yerr=data.std(axis=0), label=method_name)
+            ax.plot(range(len(data[0])), data.mean(axis=0), label=method_name)# c=clrs[i])
+            ax.fill_between(range(len(data[0])), data.mean(axis=0)-data.std(axis=0), data.mean(axis=0)+data.std(axis=0), alpha=0.3)#, facecolor=clrs[i])
 
-    plt.ylabel(metric)
-    plt.xlabel("Updates")
-    plt.legend()
-    plt.savefig(f"{plot_dir}/{metric}")
-    plt.clf()
+        plt.ylabel(metric)
+        plt.xlabel("Updates")
+        plt.legend()
+        plt.savefig(f"{plot_dir}/{metric}")
+        plt.clf()
 
 
 # Call & append
@@ -58,7 +64,6 @@ if not use_cache:
         log = pickle.load(open(path, 'rb'))
         all_logs[method_name].append(log)
     pickle.dump(all_logs, open("storage/all_logs.pkl", 'wb'))
-
 if use_cache:
     all_logs = pickle.load(open("storage/all_logs.pkl", 'rb'))
 

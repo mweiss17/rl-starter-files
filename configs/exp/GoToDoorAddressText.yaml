@@ -1,4 +1,5 @@
 env: "MiniGrid-GoToDoorAddressText-v0"
+eval_env: "MiniGrid-GoToDoorAddressExtrapolate-v0"
 model: "GoToDoorAddressText"
 text: True
 number: False
@@ -10,4 +11,6 @@ seed:
     - 0
     - 1
     - 2
+    - 3
+    - 4
 

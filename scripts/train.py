@@ -5,6 +5,7 @@ import torch
 import torch_ac
 import sys
 import pickle
+import numpy as np
 from collections import defaultdict
 
 import utils
@@ -20,6 +21,8 @@ parser.add_argument("--algo", required=True,
                     help="algorithm to use: a2c | ppo (REQUIRED)")
 parser.add_argument("--env", required=True,
                     help="name of the environment to train on (REQUIRED)")
+parser.add_argument("--eval-env",
+                    help="name of the environment to evaluate on; train if none specified.")
 parser.add_argument("--model", default=None,
                     help="name of the model (default: {ENV}_{ALGO}_{TIME})")
 parser.add_argument("--seed", type=int, default=1,
@@ -28,6 +31,8 @@ parser.add_argument("--log-interval", type=int, default=1,
                     help="number of updates between two logs (default: 1)")
 parser.add_argument("--save-interval", type=int, default=10,
                     help="number of updates between two saves (default: 10, 0 means no saving)")
+parser.add_argument("--evaluate-interval", type=int, default=10,
+                    help="number of updates between two evaluations on test set (default: 10, 0 means no evaluation)")
 parser.add_argument("--procs", type=int, default=16,
                     help="number of processes (default: 16)")
 parser.add_argument("--frames", type=int, default=10**7,
@@ -62,9 +67,9 @@ parser.add_argument("--recurrence", type=int, default=1,
                     help="number of time-steps gradient is backpropagated (default: 1). If > 1, a LSTM is added to the model to have memory.")
 parser.add_argument("--text", action="store_true", default=False,
                     help="add a GRU to the model to handle text input")
-parser.add_argument("--use_number", action="store_true", default=False,
+parser.add_argument("--use-number", action="store_true", default=False,
                     help="handle numerical input")
-parser.add_argument("--use_nac", action="store_true", default=False,
+parser.add_argument("--use-nac", action="store_true", default=False,
                     help="use a neural accumulator")
 
 args = parser.parse_args()
@@ -103,6 +108,11 @@ txt_logger.info(f"Device: {device}\n")
 envs = []
 for i in range(args.procs):
     envs.append(utils.make_env(args.env, args.seed + 10000 * i))
+
+eval_envs = []
+for i in range(args.procs):
+    eval_env_name = args.eval_env if args.eval_env else args.env
+    eval_envs.append(utils.make_env(eval_env_name, args.seed + 10000 * i))
 txt_logger.info("Environments loaded\n")
 
 # Load training status
@@ -114,6 +124,7 @@ except OSError:
 txt_logger.info("Training status loaded\n")
 
 # Load observations preprocessor
+
 obs_space, preprocess_obss = utils.get_obss_preprocessor(envs[0].observation_space, args.use_number)
 
 if "vocab" in status:
@@ -130,7 +141,6 @@ txt_logger.info("Model loaded\n")
 txt_logger.info("{}\n".format(acmodel))
 
 # Load algo
-
 if args.algo == "a2c":
     algo = torch_ac.A2CAlgo(envs, acmodel, device, args.frames_per_proc, args.discount, args.lr, args.gae_lambda,
                             args.entropy_coef, args.value_loss_coef, args.max_grad_norm, args.recurrence,
@@ -151,11 +161,19 @@ txt_logger.info("Optimizer loaded\n")
 num_frames = status["num_frames"]
 update = status["update"]
 start_time = time.time()
-results = defaultdict(list)
+
+try:
+    results = pickle.load(open(model_dir + "/results.pkl", "rb"))
+except (EOFError, FileNotFoundError):
+    results = defaultdict(list)
+try:
+    eval_results = pickle.load(open(model_dir + "/eval_results.pkl", "rb"))
+except (EOFError, FileNotFoundError):
+    eval_results = defaultdict(list)
 
 while num_frames < args.frames:
-    # Update model parameters
 
+    # Update model parameters
     update_start_time = time.time()
     exps, logs1 = algo.collect_experiences()
     logs2 = algo.update_parameters(exps)
@@ -166,7 +184,6 @@ while num_frames < args.frames:
     update += 1
 
     # Print logs
-
     if update % args.log_interval == 0:
         fps = logs["num_frames"]/(update_end_time - update_start_time)
         duration = int(time.time() - start_time)
@@ -206,3 +223,32 @@ while num_frames < args.frames:
             status["vocab"] = preprocess_obss.vocab.vocab
         utils.save_status(status, model_dir)
         txt_logger.info("Status saved")
+
+    if args.evaluate_interval > 0 and update % args.evaluate_interval == 0:
+        algo.acmodel.eval()
+        if args.algo == "a2c":
+            algo = torch_ac.A2CAlgo(eval_envs, acmodel, device, args.frames_per_proc, args.discount, args.lr,
+                                    args.gae_lambda,
+                                    args.entropy_coef, args.value_loss_coef, args.max_grad_norm, args.recurrence,
+                                    args.optim_alpha, args.optim_eps, preprocess_obss)
+        elif args.algo == "ppo":
+            algo = torch_ac.PPOAlgo(eval_envs, acmodel, device, args.frames_per_proc, args.discount, args.lr,
+                                    args.gae_lambda,
+                                    args.entropy_coef, args.value_loss_coef, args.max_grad_norm, args.recurrence,
+                                    args.optim_eps, args.clip_eps, args.epochs, args.batch_size, preprocess_obss)
+        eval_logs = {}
+        eval_logs['return_per_episode'] = []
+        num_eval_episodes = 10
+        while len(eval_logs['return_per_episode']) < num_eval_episodes:
+
+            _, eval_logs = algo.collect_experiences()
+
+        for key, value in eval_logs.items():
+            if type(value) == list:
+                eval_results[key].append(np.array(value[:num_eval_episodes]).mean())
+        pickle.dump(eval_results, open(model_dir + "/eval_results.pkl", "wb"))
+        # print([len(x) for x in eval_results['return_per_episode']])
+
+        txt_logger.info(f"eval_return_per_episode: {eval_results['return_per_episode'][-1]}, eval_reshaped_return_per_episode: {eval_results['reshaped_return_per_episode'][-1]}, eval_num_frames_per_episode: {eval_results['num_frames_per_episode'][-1]}, ")
+
+        algo.acmodel.train()
