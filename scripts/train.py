@@ -163,11 +163,13 @@ update = status["update"]
 start_time = time.time()
 
 try:
-    results = pickle.load(open(model_dir + "/results.pkl", "rb"))
+    with open(model_dir + "/results.pkl", "rb") as f:
+        results = pickle.load(f)
 except (EOFError, FileNotFoundError):
     results = defaultdict(list)
 try:
-    eval_results = pickle.load(open(model_dir + "/eval_results.pkl", "rb"))
+    with open(model_dir + "/eval_results.pkl", "rb") as f:
+        eval_results = pickle.load(f)
 except (EOFError, FileNotFoundError):
     eval_results = defaultdict(list)
 
@@ -213,7 +215,8 @@ while num_frames < args.frames:
         csv_file.flush()
         for field, value in zip(header, data):
             results[field].append(value)
-        pickle.dump(results, open(model_dir + "/results.pkl", "wb"))
+        with open(model_dir + "/results.pkl", "wb") as f:
+            pickle.dump(results, f)
 
     # Save status
     if args.save_interval > 0 and update % args.save_interval == 0:
@@ -246,8 +249,8 @@ while num_frames < args.frames:
         for key, value in eval_logs.items():
             if type(value) == list:
                 eval_results[key].append(np.array(value[:num_eval_episodes]).mean())
-        pickle.dump(eval_results, open(model_dir + "/eval_results.pkl", "wb"))
-        # print([len(x) for x in eval_results['return_per_episode']])
+        with open(model_dir + "/eval_results.pkl", "wb") as f:
+            pickle.dump(eval_results, f)
 
         txt_logger.info(f"eval_return_per_episode: {eval_results['return_per_episode'][-1]}, eval_reshaped_return_per_episode: {eval_results['reshaped_return_per_episode'][-1]}, eval_num_frames_per_episode: {eval_results['num_frames_per_episode'][-1]}, ")
 
