@@ -115,6 +115,7 @@ for i in range(args.procs):
     eval_env_name = args.eval_env if args.eval_env else args.env
     eval_envs.append(utils.make_env(eval_env_name, args.seed + 10000 * i))
 parallel_eval_env = ParallelEnv(eval_envs) # do this here cause we change the attribute directly on algo (instead of re-instantiating)
+parallel_env = ParallelEnv(envs)
 txt_logger.info("Environments loaded\n")
 
 # Load training status
@@ -247,5 +248,5 @@ while num_frames < args.frames:
             pickle.dump(eval_results, f)
 
         txt_logger.info(f"eval_return_per_episode: {eval_results['return_per_episode'][-1]}, eval_reshaped_return_per_episode: {eval_results['reshaped_return_per_episode'][-1]}, eval_num_frames_per_episode: {eval_results['num_frames_per_episode'][-1]}, ")
-
+        algo.env = parallel_env
         algo.acmodel.train()

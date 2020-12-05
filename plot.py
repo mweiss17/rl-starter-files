@@ -13,7 +13,8 @@ clrs = sns.color_palette("husl", 5)
 if not os.path.isdir(plot_dir):
     os.mkdir(plot_dir)
 use_cache = False
-event_paths = []
+result_paths = []
+eval_result_paths = []
 
 def walklevel(some_dir, level=1):
     some_dir = some_dir.rstrip(os.path.sep)
@@ -28,7 +29,8 @@ def walklevel(some_dir, level=1):
 for root, exp_dirs, files in walklevel(logging_dir):
     for exp_dir in exp_dirs:
         for seed_dir in  os.listdir(root + "/" + exp_dir):
-            event_paths.extend(glob.glob(os.path.join(root, exp_dir, seed_dir, "results.pkl")))
+            result_paths.extend(glob.glob(os.path.join(root, exp_dir, seed_dir, "results.pkl")))
+            eval_result_paths.extend(glob.glob(os.path.join(root, exp_dir, seed_dir, "eval_results.pkl")))
 
 
 def print_plot(metric, all_logs):
@@ -42,7 +44,6 @@ def print_plot(metric, all_logs):
                 data.append(logs[seed][metric])
                 print(f"seed: {seed}, len: {len(logs[seed][metric])}")
             data = np.array(data)
-            # plt.errorbar(range(len(data[0])), data.mean(axis=0), yerr=data.std(axis=0), label=method_name)
             ax.plot(range(len(data[0])), data.mean(axis=0), label=method_name)# c=clrs[i])
             ax.fill_between(range(len(data[0])), data.mean(axis=0)-data.std(axis=0), data.mean(axis=0)+data.std(axis=0), alpha=0.3)#, facecolor=clrs[i])
 
@@ -55,8 +56,9 @@ def print_plot(metric, all_logs):
 
 # Call & append
 all_logs = {}
+all_eval_logs = {}
 if not use_cache:
-    for path in event_paths:
+    for path in result_paths:
         method_name = path.split("/")[2]
         seed = path.split("/")[3]
         if not all_logs.get(method_name):
@@ -64,8 +66,18 @@ if not use_cache:
         log = pickle.load(open(path, 'rb'))
         all_logs[method_name].append(log)
     pickle.dump(all_logs, open("storage/all_logs.pkl", 'wb'))
+    for path in eval_result_paths:
+        method_name = path.split("/")[2]
+        seed = path.split("/")[3]
+        if not all_eval_logs.get(method_name):
+            all_eval_logs[method_name] = []
+        log = pickle.load(open(path, 'rb'))
+        all_eval_logs[method_name].append(log)
+    pickle.dump(all_eval_logs, open("storage/all_eval_logs.pkl", 'wb'))
+
 if use_cache:
     all_logs = pickle.load(open("storage/all_logs.pkl", 'rb'))
+    all_eval_logs = pickle.load(open("storage/all_eval_logs.pkl", 'rb'))
 
 values = print_plot("value", all_logs)
 policy_loss = print_plot("policy_loss", all_logs)
@@ -73,3 +85,7 @@ value_loss = print_plot("value_loss", all_logs)
 return_mean = print_plot("return_mean", all_logs)
 rreturn_mean = print_plot("rreturn_mean", all_logs)
 FPS = print_plot("FPS", all_logs)
+
+
+return_per_episode = print_plot("return_per_episode", all_eval_logs)
+num_frames_per_episode = print_plot("num_frames_per_episode", all_eval_logs)
