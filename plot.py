@@ -87,5 +87,5 @@ rreturn_mean = print_plot("rreturn_mean", all_logs)
 FPS = print_plot("FPS", all_logs)
 
 
-return_per_episode = print_plot("return_per_episode", all_eval_logs)
+return_per_episode = print_plot("eval_return_per_episode", all_eval_logs)
 num_frames_per_episode = print_plot("num_frames_per_episode", all_eval_logs)
