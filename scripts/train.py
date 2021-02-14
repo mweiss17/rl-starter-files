@@ -9,7 +9,7 @@ import numpy as np
 from collections import defaultdict
 
 import utils
-from model import ACModel
+from model import ACModel, ACMLPModel, ACNACModel
 from torch_ac.utils import ParallelEnv
 
 
@@ -72,6 +72,8 @@ parser.add_argument("--use-number", action="store_true", default=False,
                     help="handle numerical input")
 parser.add_argument("--use-nac", action="store_true", default=False,
                     help="use a neural accumulator")
+parser.add_argument("--load-status", action="store_true", default=False,
+                    help="use a neural accumulator")
 
 args = parser.parse_args()
 
@@ -101,7 +103,7 @@ utils.seed(args.seed)
 
 # Set device
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")#torch.device("cuda" if torch.cuda.is_available() else "cpu")
 txt_logger.info(f"Device: {device}\n")
 
 # Load environments
@@ -121,9 +123,13 @@ txt_logger.info("Environments loaded\n")
 # Load training status
 
 try:
-    status = utils.get_status(model_dir)
+    if args.load_status:
+        status = utils.get_status(model_dir)
+    else:
+        status = {"num_frames": 0, "update": 0}
 except OSError:
     status = {"num_frames": 0, "update": 0}
+
 txt_logger.info("Training status loaded\n")
 
 # Load observations preprocessor
@@ -136,10 +142,18 @@ txt_logger.info("Observations preprocessor loaded")
 
 # Load model
 
-acmodel = ACModel(obs_space, envs[0].action_space, args.mem, args.text, args.use_number, args.use_nac)
+if args.model == "ACMLP":
+    acmodel = ACMLPModel(obs_space, envs[0].action_space)
+elif args.model == "ACNAC":
+    acmodel = ACNACModel(obs_space, envs[0].action_space)
+else:
+    acmodel = ACModel(obs_space, envs[0].action_space, args.mem, args.text, args.use_number, args.use_nac)
+
 if "model_state" in status:
     acmodel.load_state_dict(status["model_state"])
 acmodel.to(device)
+acmodel.eval()
+
 txt_logger.info("Model loaded\n")
 txt_logger.info("{}\n".format(acmodel))
 
@@ -249,4 +263,4 @@ while num_frames < args.frames:
 
         txt_logger.info(f"eval_return_per_episode: {eval_results['return_per_episode'][-1]}, eval_reshaped_return_per_episode: {eval_results['reshaped_return_per_episode'][-1]}, eval_num_frames_per_episode: {eval_results['num_frames_per_episode'][-1]}, ")
         algo.env = parallel_env
-        algo.acmodel.train()
+        # algo.acmodel.train()

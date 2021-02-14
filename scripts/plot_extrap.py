@@ -6,16 +6,21 @@ import seaborn as sns
 from tqdm import tqdm
 from matplotlib import pyplot as plt
 
-# Get all event* runs from logging_dir subdirectories
-logging_dir = '../storage/'
-plot_dir = '../plots/extrap'
-clrs = sns.color_palette("husl", 5)
+model_name = 'ACMLP'
+logging_dir = os.path.join(os.getcwd(), 'storage', model_name)
+plot_dir = os.path.join(os.getcwd(), 'plots', model_name, 'extrap')
+
+
 if not os.path.isdir(plot_dir):
-    os.mkdir(plot_dir)
+    os.makedirs(plot_dir)
+
+clrs = sns.color_palette("husl", 5)
+
 use_cache = False
 result_paths = []
 eval_result_paths = []
 
+# Get all event* runs from logging_dir subdirectories
 def walklevel(some_dir, level=1):
     some_dir = some_dir.rstrip(os.path.sep)
     assert os.path.isdir(some_dir)
@@ -30,11 +35,16 @@ def walklevel(some_dir, level=1):
 
 eval_results = {}
 for root, exp_dirs, files in walklevel(logging_dir):
-    for exp_dir in exp_dirs:
-        for exp_dir_name in os.listdir(root + "/" + exp_dir):
-            if exp_dir_name == "extrap.pkl":
-                path = os.path.join(root, exp_dir, "extrap.pkl")
-                eval_results[exp_dir] = pickle.load(open(path, "rb"))
+    # for exp_dir in exp_dirs:
+    #     for exp_dir_name in os.listdir(root + "/" + exp_dir):
+    #         import pdb; pdb.set_trace()
+    #         if exp_dir_name == "extrap.pkl":
+    #             path = os.path.join(root, exp_dir, "extrap.pkl")
+    #             eval_results[exp_dir] = pickle.load(open(path, "rb"))
+    for filename in files:
+        if filename == "extrap.pkl":
+            path = os.path.join(root, "extrap.pkl")
+            eval_results["root"] = pickle.load(open(path, "rb"))
 
 # Call & append
 fig, ax = plt.subplots()
@@ -47,8 +57,6 @@ for method, data in eval_results.items():
     for setting in data:
         return_means.append(np.mean(setting['return_per_episode']))
         return_stds.append(np.std(setting['return_per_episode']))
-    print(return_stds)
-    print(return_means)
 
     ax.plot(offsets, return_means, label=method)  # c=clrs[i])
     ax.fill_between(offsets, return_means - np.array(return_stds)/2, return_means + np.array(return_stds)/2, alpha=0.3)  # , facecolor=clrs[i])

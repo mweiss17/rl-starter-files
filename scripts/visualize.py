@@ -29,6 +29,8 @@ parser.add_argument("--memory", action="store_true", default=False,
                     help="add a LSTM to the model")
 parser.add_argument("--text", action="store_true", default=False,
                     help="add a GRU to the model")
+parser.add_argument("--use-number", action="store_true", default=False,
+                    help="use number")
 
 args = parser.parse_args()
 
@@ -77,11 +79,12 @@ for episode in range(args.episodes):
         obs, reward, done, _ = env.step(action)
         agent.analyze_feedback(reward, done)
 
-        if done or env.window.closed:
+        # if done or env.window.closed:
+        if done:
             break
 
-    if env.window.closed:
-        break
+    # if env.window.closed:
+    #     break
 
 if args.gif:
     print("Saving gif... ", end="")

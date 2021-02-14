@@ -1,7 +1,7 @@
 import torch
 
 import utils
-from model import ACModel
+from model import ACModel, ACMLPModel, ACNACModel
 
 
 class Agent:
@@ -11,10 +11,18 @@ class Agent:
     - to choose an action given an observation,
     - to analyze the feedback (i.e. reward and done state) of its action."""
 
-    def __init__(self, obs_space, action_space, model_dir,
-                 device=None, argmax=False, num_envs=1, use_memory=False, use_text=False, use_number=False):
+    def __init__(self, obs_space, action_space, model_dir, device=None, argmax=False, num_envs=1, use_memory=False, use_text=False, use_number=False, use_nac=False):
+
         obs_space, self.preprocess_obss = utils.get_obss_preprocessor(obs_space, use_number)
-        self.acmodel = ACModel(obs_space, action_space, use_memory=use_memory, use_text=use_text)
+
+        if "ACMLP" in model_dir:
+            self.acmodel = ACMLPModel(obs_space, action_space)
+        elif "ACNAC" in model_dir:
+            self.acmodel = ACNACModel(obs_space, action_space)
+        else:
+            self.acmodel = ACModel(obs_space, action_space, use_memory, use_text, use_number, use_nac)
+
+        # self.acmodel = ACModel(obs_space, action_space, use_memory=use_memory, use_text=use_text, use_number=use_number, use_nac=use_nac)
         self.device = device
         self.argmax = argmax
         self.num_envs = num_envs
@@ -23,6 +31,7 @@ class Agent:
             self.memories = torch.zeros(self.num_envs, self.acmodel.memory_size, device=self.device)
 
         self.acmodel.load_state_dict(utils.get_model_state(model_dir))
+        print(self.acmodel)
         self.acmodel.to(self.device)
         self.acmodel.eval()
         if hasattr(self.preprocess_obss, "vocab"):
@@ -32,11 +41,11 @@ class Agent:
         preprocessed_obss = self.preprocess_obss(obss, device=self.device)
 
         with torch.no_grad():
-            if self.acmodel.recurrent:
-                dist, _, self.memories = self.acmodel(preprocessed_obss, self.memories)
-            else:
-                dist, _ = self.acmodel(preprocessed_obss)
-
+            # if self.acmodel.recurrent:
+            #     dist, _, self.memories = self.acmodel(preprocessed_obss, self.memories)
+            # else:
+            dist, _, _= self.acmodel(preprocessed_obss, [])
+        # import pdb; pdb.set_trace()
         if self.argmax:
             actions = dist.probs.max(1, keepdim=True)[1]
         else:

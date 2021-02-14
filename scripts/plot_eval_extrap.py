@@ -30,5 +30,4 @@ for idx, fname in enumerate(fnames):
 plt.legend()
 plt.xlabel("House Number Offset")
 plt.ylabel("Episode Reward")
-plt.show()
-# plt.savefig("/home/martin/Desktop/eval_extrap.png")
+plt.savefig("eval_extrap.png")
