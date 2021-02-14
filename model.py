@@ -139,3 +139,108 @@ class ACModel(nn.Module, torch_ac.RecurrentACModel):
     def _get_embed_text(self, text):
         _, hidden = self.text_rnn(self.word_embedding(text))
         return hidden[-1]
+
+
+class ACMLPModel(nn.Module, torch_ac.RecurrentACModel):
+    def __init__(self, obs_space, action_space):
+        super().__init__()
+
+        n = obs_space["image"][0]
+        m = obs_space["image"][1]
+
+        self.image_embedding_size = n * m
+        self.embedding_size = self.semi_memory_size + 1
+        self.hidden_layer_size = self.embedding_size
+
+        self.critic = nn.Sequential(
+            nn.Linear(self.embedding_size, self.hidden_layer_size),
+            nn.Tanh(),
+        )
+        self.critic_nac = NAC(2 * self.hidden_layer_size, 1)
+
+        self.actor = nn.Sequential(
+            nn.Linear(self.embedding_size, self.hidden_layer_size),
+            nn.Tanh(),
+        )
+        self.actor_nac = NAC(2 * self.hidden_layer_size, action_space.n)
+
+        # Initialize parameters correctly
+        self.apply(init_params)
+
+    @property
+    def memory_size(self):
+        return 2*self.semi_memory_size
+
+    @property
+    def semi_memory_size(self):
+        return self.image_embedding_size
+
+
+    def forward(self, obs, memory):
+        x = obs.image.transpose(1, 3).transpose(2, 3)
+        x = x[:, -1]
+        x = x.reshape(x.shape[0], -1)
+        embedding = torch.cat((x, obs.numbers), dim=1)
+
+        x = self.actor(embedding)
+        x = torch.cat((embedding, x), dim=1) # skip connection
+        x = self.actor_nac(x)
+        dist = Categorical(logits=F.log_softmax(x, dim=1))
+
+        x = self.critic(embedding)
+        x = torch.cat((embedding, x), dim=1) # skip connection
+        x = self.critic_nac(x)
+
+        value = x.squeeze(1)
+
+        return dist, value, memory
+
+
+
+class ACNACModel(nn.Module, torch_ac.RecurrentACModel):
+    def __init__(self, obs_space, action_space):
+        super().__init__()
+
+        n = obs_space["image"][0]
+        m = obs_space["image"][1]
+
+        self.image_embedding_size = n * m
+        self.embedding_size = self.semi_memory_size + 1
+        self.hidden_layer_size = 64
+
+        self.critic = nn.Sequential(
+            NAC(self.embedding_size, 1)
+        )
+        self.actor = nn.Sequential(
+            NAC(self.embedding_size, action_space.n)
+        )
+
+        # Initialize parameters correctly
+        self.apply(init_params)
+
+    @property
+    def memory_size(self):
+        return 2*self.semi_memory_size
+
+    @property
+    def semi_memory_size(self):
+        return self.image_embedding_size
+
+
+    def forward(self, obs, memory):
+        x = obs.image.transpose(1, 3).transpose(2, 3)
+        x = x[:, -1]
+        x = x.reshape(x.shape[0], -1)
+        embedding = torch.cat((x, obs.numbers), dim=1)
+
+        x = self.actor(embedding)
+        dist = Categorical(logits=F.log_softmax(x, dim=1))
+
+        x = self.critic(embedding)
+        value = x.squeeze(1)
+
+        return dist, value, memory
+
+    def _get_embed_text(self, text):
+        _, hidden = self.text_rnn(self.word_embedding(text))
+        return hidden[-1]
