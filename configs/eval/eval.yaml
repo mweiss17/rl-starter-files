@@ -1,0 +1,6 @@
+env: "MiniGrid-GoToDoorAddressExtrapolate-v0"
+exp_id: "2021-02-14"
+episodes: 100
+extrap_min: 0
+extrap_max: 10
+procs: 16

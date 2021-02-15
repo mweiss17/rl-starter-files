@@ -26,6 +26,8 @@ parser.add_argument("--eval-env",
                     help="name of the environment to evaluate on; train if none specified.")
 parser.add_argument("--model", default=None,
                     help="name of the model (default: {ENV}_{ALGO}_{TIME})")
+parser.add_argument("--exp-id", default=None,
+                    help="experiment identifier used when writing out results (default: {TODAY'S DATE})")
 parser.add_argument("--seed", type=int, default=1,
                     help="random seed (default: 1)")
 parser.add_argument("--log-interval", type=int, default=1,
@@ -68,8 +70,6 @@ parser.add_argument("--recurrence", type=int, default=1,
                     help="number of time-steps gradient is backpropagated (default: 1). If > 1, a LSTM is added to the model to have memory.")
 parser.add_argument("--text", action="store_true", default=False,
                     help="add a GRU to the model to handle text input")
-parser.add_argument("--use-number", action="store_true", default=False,
-                    help="handle numerical input")
 parser.add_argument("--use-nac", action="store_true", default=False,
                     help="use a neural accumulator")
 parser.add_argument("--load-status", action="store_true", default=False,
@@ -85,7 +85,8 @@ date = datetime.datetime.now().strftime("%y-%m-%d-%H-%M-%S")
 default_model_name = f"{args.env}_{args.algo}_seed{args.seed}_{date}"
 
 model_name = args.model + f"/seed_{args.seed}" or default_model_name
-model_dir = utils.get_model_dir(model_name)
+exp_id = args.exp_id if args.exp_id != None else str(datetime.datetime.today()).split(" ")[0]
+model_dir = utils.get_model_dir(model_name, exp_id)
 
 # Load loggers and Tensorboard writer
 
@@ -134,7 +135,7 @@ txt_logger.info("Training status loaded\n")
 
 # Load observations preprocessor
 
-obs_space, preprocess_obss = utils.get_obss_preprocessor(envs[0].observation_space, args.use_number)
+obs_space, preprocess_obss = utils.get_obss_preprocessor(envs[0].observation_space)
 
 if "vocab" in status:
     preprocess_obss.vocab.load_vocab(status["vocab"])
@@ -147,7 +148,7 @@ if args.model == "ACMLP":
 elif args.model == "ACNAC":
     acmodel = ACNACModel(obs_space, envs[0].action_space)
 else:
-    acmodel = ACModel(obs_space, envs[0].action_space, args.mem, args.text, args.use_number, args.use_nac)
+    acmodel = ACModel(obs_space, envs[0].action_space, args.mem, args.text, args.use_nac)
 
 if "model_state" in status:
     acmodel.load_state_dict(status["model_state"])
@@ -263,4 +264,4 @@ while num_frames < args.frames:
 
         txt_logger.info(f"eval_return_per_episode: {eval_results['return_per_episode'][-1]}, eval_reshaped_return_per_episode: {eval_results['reshaped_return_per_episode'][-1]}, eval_num_frames_per_episode: {eval_results['num_frames_per_episode'][-1]}, ")
         algo.env = parallel_env
-        # algo.acmodel.train()
+        algo.acmodel.train()

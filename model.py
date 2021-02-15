@@ -31,12 +31,11 @@ class NAC(nn.Module):
 
 
 class ACModel(nn.Module, torch_ac.RecurrentACModel):
-    def __init__(self, obs_space, action_space, use_memory=False, use_text=False, use_number=False, use_nac=False):
+    def __init__(self, obs_space, action_space, use_memory=False, use_text=False, use_nac=False):
         super().__init__()
 
         # Decide which components are enabled
         self.use_text = use_text
-        self.use_number = use_number
         self.use_memory = use_memory
         self.use_nac = use_nac
         # Define image embedding
@@ -70,8 +69,7 @@ class ACModel(nn.Module, torch_ac.RecurrentACModel):
         if self.use_text:
             self.embedding_size += self.text_embedding_size
 
-        if self.use_number:
-            self.embedding_size += 1
+        self.embedding_size += 1
 
 
         if self.use_nac:
@@ -125,8 +123,7 @@ class ACModel(nn.Module, torch_ac.RecurrentACModel):
             embed_text = self._get_embed_text(obs.text)
             embedding = torch.cat((embedding, embed_text), dim=1)
 
-        if self.use_number:
-            embedding = torch.cat((embedding, obs.numbers), dim=1)
+        embedding = torch.cat((embedding, obs.numbers), dim=1)
 
         x = self.actor(embedding)
         dist = Categorical(logits=F.log_softmax(x, dim=1))

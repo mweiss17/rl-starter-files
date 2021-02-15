@@ -4,6 +4,7 @@ import pickle
 import numpy as np
 import seaborn as sns
 from tqdm import tqdm
+import utils
 from matplotlib import pyplot as plt
 
 model_name = 'ACMLP'
@@ -21,29 +22,17 @@ result_paths = []
 eval_result_paths = []
 
 # Get all event* runs from logging_dir subdirectories
-def walklevel(some_dir, level=1):
-    some_dir = some_dir.rstrip(os.path.sep)
-    assert os.path.isdir(some_dir)
-    num_sep = some_dir.count(os.path.sep)
-    for root, dirs, files in os.walk(some_dir):
-        yield root, dirs, files
-        num_sep_this = root.count(os.path.sep)
-        if num_sep + level <= num_sep_this:
-            del dirs[:]
-
-
-
 eval_results = {}
-for root, exp_dirs, files in walklevel(logging_dir):
+for root, exp_dirs, files in utils.walklevel(logging_dir):
     # for exp_dir in exp_dirs:
     #     for exp_dir_name in os.listdir(root + "/" + exp_dir):
     #         import pdb; pdb.set_trace()
-    #         if exp_dir_name == "extrap.pkl":
-    #             path = os.path.join(root, exp_dir, "extrap.pkl")
+    #         if exp_dir_name == "evaluation.pkl":
+    #             path = os.path.join(root, exp_dir, "evaluation.pkl")
     #             eval_results[exp_dir] = pickle.load(open(path, "rb"))
     for filename in files:
-        if filename == "extrap.pkl":
-            path = os.path.join(root, "extrap.pkl")
+        if filename == "evaluation.pkl":
+            path = os.path.join(root, "evaluation.pkl")
             eval_results["root"] = pickle.load(open(path, "rb"))
 
 # Call & append

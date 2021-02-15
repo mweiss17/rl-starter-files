@@ -450,7 +450,6 @@ def main(conf: DictConfig) -> None:
             job_str += f"--save-interval 10 "
             job_str += f"--frames {conf['frames']} "
             job_str += f"{'--text' if conf['text'] else '' } "
-            job_str += f"{'--use-number' if conf['number'] else '' } "
             job_str += f"{'--use-nac' if conf['use_nac'] else '' } "
             if conf['eval_env']:
                 job_str += f"--eval-env {conf['eval_env']} "

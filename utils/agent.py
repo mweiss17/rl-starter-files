@@ -11,18 +11,17 @@ class Agent:
     - to choose an action given an observation,
     - to analyze the feedback (i.e. reward and done state) of its action."""
 
-    def __init__(self, obs_space, action_space, model_dir, device=None, argmax=False, num_envs=1, use_memory=False, use_text=False, use_number=False, use_nac=False):
+    def __init__(self, obs_space, action_space, model_dir, device=None, argmax=False, num_envs=1, use_memory=False, use_text=False, use_nac=False):
 
-        obs_space, self.preprocess_obss = utils.get_obss_preprocessor(obs_space, use_number)
+        obs_space, self.preprocess_obss = utils.get_obss_preprocessor(obs_space)
 
         if "ACMLP" in model_dir:
             self.acmodel = ACMLPModel(obs_space, action_space)
         elif "ACNAC" in model_dir:
             self.acmodel = ACNACModel(obs_space, action_space)
         else:
-            self.acmodel = ACModel(obs_space, action_space, use_memory, use_text, use_number, use_nac)
+            self.acmodel = ACModel(obs_space, action_space, use_memory, use_text, use_nac)
 
-        # self.acmodel = ACModel(obs_space, action_space, use_memory=use_memory, use_text=use_text, use_number=use_number, use_nac=use_nac)
         self.device = device
         self.argmax = argmax
         self.num_envs = num_envs

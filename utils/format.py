@@ -5,7 +5,7 @@ import torch_ac
 import gym
 
 
-def get_obss_preprocessor(obs_space, use_number=False):
+def get_obss_preprocessor(obs_space):
     # Check if obs_space is an image space
     if isinstance(obs_space, gym.spaces.Box):
         obs_space = {"image": obs_space.shape}
@@ -21,17 +21,11 @@ def get_obss_preprocessor(obs_space, use_number=False):
 
         vocab = Vocabulary(obs_space["text"])
         def preprocess_obss(obss, device=None):
-            if use_number:
-                preprocess_obss = torch_ac.DictList({
-                    "image": preprocess_images([obs["image"] for obs in obss], device=device),
-                    "text": preprocess_texts([obs["mission"] for obs in obss], vocab, device=device),
-                    "numbers": preprocess_numbers([obs["numbers"] for obs in obss], device=device)
-                })
-            else:
-                preprocess_obss = torch_ac.DictList({
-                    "image": preprocess_images([obs["image"] for obs in obss], device=device),
-                    "text": preprocess_texts([obs["mission"] for obs in obss], vocab, device=device),
-                })
+            preprocess_obss = torch_ac.DictList({
+                "image": preprocess_images([obs["image"] for obs in obss], device=device),
+                "text": preprocess_texts([obs["mission"] for obs in obss], vocab, device=device),
+                "numbers": preprocess_numbers([obs["numbers"] for obs in obss], device=device)
+            })
             return preprocess_obss
         preprocess_obss.vocab = vocab
 
